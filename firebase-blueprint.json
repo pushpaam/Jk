@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "Work": {
+      "title": "Work",
+      "description": "A portfolio work item",
+      "type": "object",
+      "properties": {
+        "url": { "type": "string", "description": "Image or Video URL" },
+        "type": { "type": "string", "enum": ["image", "video"], "description": "Type of work (image or video)" },
+        "size": { "type": "string", "description": "Display size (small, medium, large)" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "uid": { "type": "string", "description": "Owner UID" }
+      },
+      "required": ["url", "size", "createdAt", "uid"]
+    }
+  },
+  "firestore": {
+    "/works/{workId}": {
+      "schema": "Work",
+      "description": "Collection of portfolio works"
+    }
+  }
+}

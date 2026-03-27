@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: works
+    // Document ID: auto-generated
+    // Fields:
+    //   - url: string (required) - Image or Video URL
+    //   - type: string (required, enum: ['image', 'video']) - Type of work
+    //   - size: string (required, enum: ['small', 'medium', 'large']) - Display size
+    //   - createdAt: timestamp (required) - Creation timestamp
+    //   - uid: string (required) - Owner UID
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == "pushpam17102009@gmail.com" && 
+        request.auth.token.email_verified == true
+      );
+    }
+
+    function isValidWork(data) {
+      return data.keys().hasAll(['url', 'type', 'size', 'createdAt', 'uid']) &&
+             data.keys().hasOnly(['url', 'type', 'size', 'createdAt', 'uid']) &&
+             data.url is string && data.url.size() > 0 && data.url.size() < 2000 &&
+             data.type in ['image', 'video'] &&
+             data.size in ['small', 'medium', 'large'] &&
+             data.createdAt is timestamp &&
+             data.uid == request.auth.uid;
+    }
+
+    match /works/{workId} {
+      // Publicly readable for the portfolio
+      allow read: if true;
+      
+      // Only authenticated users can create their own works
+      allow create: if isAuthenticated() && isValidWork(request.resource.data);
+      
+      // Only the owner or admin can update/delete
+      allow update: if isAuthenticated() && (isDocOwner() || isAdmin()) && isValidWork(request.resource.data);
+      allow delete: if isAuthenticated() && (isDocOwner() || isAdmin());
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}
